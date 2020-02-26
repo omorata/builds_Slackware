@@ -1,0 +1,103 @@
+#!/bin/bash
+
+PRGNAM=googleearth
+VERSION=${VERSION:-7.3.2.5815}
+ARCH=x64
+BUILD=${BUILD:-1omx}
+
+RPMNAME=google-earth-pro-stable-current.x86_64.rpm
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-$TMP}
+
+
+set -e -x
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+
+	chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+    mkdir $BUILDIR
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+    #mkdir -p $DOC
+    mkdir $BUILDIR/install
+
+    cd $BUILDIR
+    rpm2cpio < $CWD/$RPMNAME | cpio -imdv || exit 1
+
+
+    DESKTOPFILE=$BUILDIR/usr/share/applications/GoogleEarth.desktop
+    MIMEFILE=$BUILDIR/usr/share/mime/googleearth-mimetypes.xml
+    mkdir -p $BUILDIR/usr/share/{applications,mime,icons/hicolor}  \
+	  $BUILDIR/usr/bin
+   
+    cat $CWD/google-earth-desktop > $DESKTOPFILE 
+
+    cat $CWD/google-earth-mime > $MIMEFILE 
+
+
+    # Copy icons to /usr/share/icons
+    for i in 16 22 24 32 48 64 128 256; do
+	mkdir -p $BUILDIR/usr/share/icons/hicolor/${i}x${i}/apps
+        mv $BUILDIR/opt/google/earth/pro/product_logo_${i}.png \
+	    $BUILDIR/usr/share/icons/hicolor/${i}x${i}/apps/$PRGNAM.png
+    done
+
+    # The cron job is for Debian/Ubuntu only:
+    rm -rf $BUILDIR/etc
+
+
+    cd $BUILDIR/opt/google/earth/pro
+
+
+    #Documentation
+
+    #cp gpl.txt $DOC
+
+
+    #patch script for non-US 
+    patch -p0 < $CWD/patch-num
+
+
+    mv $BUILDIR/opt/google/earth/pro/google-earth-pro.desktop \
+	$BUILDIR/usr/share/applications/google-earth.desktop
+
+
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+    cat $CWD/doinst.sh > $BUILDIR/install/doinst.sh
+
+
+fi
+echo "Ok"
+
+
+# Google Earth 6 is "LSB compliant" meaning it was built on a LSB system. 
+#   Slackware however does not have that symlink which is part of the LSB 3.0 
+#   specification. You'll need to create the symlink manually after installing 
+#   the package:
+#    
+#     32bits:    ln -sf /lib/ld-linux.so.2 /lib/ld-lsb.so.3
+#     64bits:    ln -sf /lib64/ld-linux-x86-64.so.2 /lib/ld-lsb-x86.so.3
+#
+#
+#

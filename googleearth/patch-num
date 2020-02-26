@@ -1,0 +1,8 @@
+--- googleearth	2013-07-26 17:52:54.247644554 +0800
++++ googleearth	2013-07-26 17:52:44.509644988 +0800
+@@ -40,4 +40,5 @@
+ 
+ cd $script_path;
+ 
++export LC_NUMERIC=en_US.UTF-8
+ LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./googleearth-bin "$@"

@@ -1,0 +1,114 @@
+#!/bin/bash
+SRCDIR=/home/oscar/soft/codi_font
+DEST=/tmp/paks
+
+NOMPROG=googleearth
+VERSION=6.0.3.2197
+ARCH=i486
+BUILD=1omx
+
+CWD=$(pwd)
+set -e -x
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $DEST
+        chown -R root.root .
+
+        makepkg -l y -c n ../$NOMPROG-$VERSION-$ARCH-$BUILD.tgz
+        cd ..
+        chown oscar.users $NOMPROG-$VERSION-$ARCH-$BUILD.tgz
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    if [ -e $DEST ];then
+        rm -Rf $DEST
+    fi
+    mkdir $DEST
+    DOC=$DEST/usr/doc/$NOMPROG-$VERSION
+
+    mkdir -p $DEST/opt/$NOMPROG $DOC 
+    mkdir $DEST/install
+
+    sh GoogleEarthLinux.bin --noexec --target $DEST/opt/$NOMPROG
+ 
+
+    cd $DEST/opt/$NOMPROG
+    tar xf googleearth-data.tar
+    tar xf googleearth-linux-x86.tar
+    rm googleearth-data.tar googleearth-linux-x86.tar
+    
+    mv bin/googleearth .
+    rmdir bin
+
+    DESKTOPFILE=$DEST/usr/share/applications/GoogleEarth.desktop
+    MIMEFILE=$DEST/usr/share/mime/googleearth-mimetypes.xml
+    mkdir -p $DEST/usr/share/{applications,mime,pixmaps} $DEST/usr/bin
+   
+    cat > $DESKTOPFILE << EOF
+[Desktop Entry]
+Name=Google Earth
+GenericName=3D planet viewer
+Comment=Explore, search, and discover the planet
+Exec=googleearth %f
+Terminal=false
+MultipleArgs=false
+Type=Application
+Icon=googleearth-icon
+Categories=Network;
+MimeType=application/vnd.google-earth.kml+xml;application/vnd.google-earth.kmz;application/earthviewer;application/keyhole;
+
+EOF
+
+    cat > $MIMEFILE << EOF
+<?xml version="1.0"?>
+<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>
+  <mime-type type="application/vnd.google-earth.kml+xml">
+    <comment>Keyhole Markup Language data</comment>
+    <glob pattern="*.kml"/>
+  </mime-type>
+
+  <mime-type type="application/vnd.google-earth.kmz">
+    <comment>Keyhole Markup Language archive</comment>
+    <glob pattern="*.kmz"/>
+  </mime-type>
+
+  <mime-type type="application/keyhole">
+    <comment>Keyhole Markup Language data</comment>
+  </mime-type>
+
+  <mime-type type="application/earthviewer">
+    <comment>Keyhole Markup Language data</comment>
+  </mime-type>
+</mime-info>
+EOF
+
+    #Documentation
+    cp {README.linux,gpl.txt} $DOC    
+
+    #links 
+    cd $DEST/usr/share/pixmaps
+    ln -s /opt/$NOMPROGgoogleearth-icon.png .
+    ln -s /opt/$NOMPROG/googleearth.xpm .
+    cd $DEST/usr/bin 
+    ln -s /opt/$NOMPROG/googleearth .
+
+    cat $CWD/slack-desc > $DEST/install/slack-desc
+    cat $CWD/doinst.sh > $DEST/install/doinst.sh
+
+    # delete unused stuff
+    rm $DEST/opt/$NOMPROG/{preuninstall,setup,postinstall}.sh
+    rm -rf $DEST/opt/$NOMPROG/setup.data
+
+fi
+echo "Ok"
+
+
+# Google Earth 6 is "LSB compliant" meaning it was built on a LSB system. 
+#   Slackware however does not have that symlink which is part of the LSB 3.0 
+#   specification. You'll need to create the symlink manually after installing 
+#   the package:
+#    
+#            ln -sf /lib/ld-linux.so.2 /lib/ld-lsb.so.3
