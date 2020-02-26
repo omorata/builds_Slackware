@@ -1,0 +1,59 @@
+#!/bin/bash
+
+PRGNAM=freeplane
+VERSION=${VERSION:-1.7.12}
+ARCH=noarch
+BUILD=${BUILD:-1omx}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-$TMP}
+
+set -e -x
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd $OUTPUT
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    SRC=${PRGNAM}_bin-$VERSION
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+
+    DESTPROG=$BUILDIR/opt/$PRGNAM
+
+    mkdir -p $BUILDIR/opt $BUILDIR/install $BUILDIR/usr/bin 
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+
+    unzip $SRC.zip -d $BUILDIR
+
+    cd $BUILDIR
+    mv $PRGNAM-${VERSION} $PRGNAM
+    mv $PRGNAM opt/
+    cd $DESTPROG
+    rm -Rf backups doc/backups
+
+    rm $PRGNAM.bat $PRGNAM.exe
+
+    cd $BUILDIR/usr/bin
+    ln -sf /opt/${PRGNAM}/${PRGNAM}.sh freeplane
+fi
+echo "Ok"
+
