@@ -1,0 +1,44 @@
+#!/bin/bash
+
+DESTDIR=/tmp/paks
+
+NOMPROG=rachota
+VERSIO=${VERSIO:-2.4}
+ARCH=noarch
+BUILD=${BUILD:-1omx}
+
+CWD=$(pwd)
+
+RACH_VERS=24
+
+set -e -x
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $DESTDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$NOMPROG-$VERSIO-$ARCH-$BUILD.tgz
+        cd ..
+        chown oscar.users $NOMPROG-$VERSIO-$ARCH-$BUILD.tgz
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    SRC=${NOMPROG}_${RACH_VERS}
+    DOC=$DESTDIR/usr/doc/$NOMPROG-$VERSIO
+
+    if [ -e $DESTDIR ];then
+        rm -Rf $DESTDIR
+    fi
+
+
+    mkdir -p $DESTDIR/usr/local/bin $DESTDIR/install
+    cp $CWD/$SRC.jar $DESTDIR/usr/local/bin
+
+    cp $CWD/slack-desc $DESTDIR/install
+
+fi
+echo "Ok"
+
