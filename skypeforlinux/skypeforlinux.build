@@ -1,0 +1,90 @@
+#!/bin/bash
+#SRCDIR=/home/oscar/soft/codi_font
+DEST=/tmp/packages
+
+PRGNAM=skypeforlinux
+VERSION=${VERSION:-8.44.0.40}
+ARCH=${ARCH:-x86_64}
+BUILD=${BUILD:-1omx}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-$TMP}
+
+#set -o nounset
+set -e -x
+
+if [[ $ARCH != x86_64 ]]; then
+    echo "$ARCH is not supported"
+fi
+
+
+if [[ $1 == "pkg" ]];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+	chown -R root:root .
+	find -L . \
+	     \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
+	     -o -perm 511 \) -exec chmod 755 {} \; -o \
+	     \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
+	     -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd $OUTPUT
+	
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+	mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+	
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+
+    mkdir -p $BUILDIR/install
+
+
+    cd $BUILDIR
+    if [[ -f $CWD/${PRGNAM}_${VERSION}_amd64.deb ]]; then
+	ar p $CWD/${PRGNAM}_${VERSION}_amd64.deb data.tar.xz | tar -xvJ
+    elif [ -f $CWD/${PRGNAM}-64.deb ]; then
+	# Support the website download
+	ar p $CWD/${PRGNAM}-64.deb data.tar.xz | tar -xvJ
+	VERSION=$(ar p $CWD/${PRGNAM}-64.deb control.tar.gz \
+		      | tar -Ozxf - ./control | awk '/^Version:/{print $NF}')
+    fi
+
+    rm -rf $BUILDIR/opt
+    
+    SRC=$PRGNAM-$VERSION
+    DOC=usr/doc/$PRGNAM-$VERSION
+
+    mkdir -p $DOC
+    
+    # https://github.com/maelnor/skype-dbus-mock
+    install -Dm 644 $CWD/skype-dbus-mock/skype-dbus-mock.conf \
+	    $BUILDIR/usr/share/dbus-1/system.d/skype-dbus-mock.conf
+    install -Dm 644 $CWD/skype-dbus-mock/org.freedesktop.login1.service \
+	    $BUILDIR/usr/share/dbus-1/system-services/org.freedesktop.login1.service
+    install -Dm 755 $CWD/skype-dbus-mock/skype-dbus-mock.py \
+	    $BUILDIR/usr/bin/skype-dbus-mock
+
+    mv usr/share/$PRGNAM/LICENSE* $DOC
+    mv usr/share/doc/$PRGNAM/* $DOC
+    rm -rf usr/share/doc
+    # Fixes: Help -> About Skype -> Third Party Notices
+    ln -s $PRGNAM-$VERSION usr/doc/$PRGNAM
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-dest
+    cat $CWD/doinst.sh > $BUILDIR/install/doinst.sh
+
+fi
+echo "Ok"
