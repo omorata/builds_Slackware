@@ -1,0 +1,100 @@
+#!/bin/bash
+
+PRGNAM=zotero
+SRCNAM=Zotero
+VERSION=${VERSION:-5.0.82}
+BUILD=${BUILD:-1omx}
+ARCH=${ARCH:-x86_64}
+
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-$TMP}
+
+#CPUS="-j 3"
+
+if [ -z "$ARCH" ]; then
+    case "$( uname -m )" in
+	i?86) ARCH=i486 ;;
+	arm*) ARCH=arm ;;
+	*) ARCH=$( uname -m ) ;;
+    esac
+fi
+
+if [ "$ARCH" != "i686" ] && [ "$ARCH" != "x86_64" ]; then
+  printf "\n\n$ARCH is not supported... \n"
+  exit 1
+fi
+
+
+set -e -x
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd $OUTPUT
+	
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+	
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+
+
+    
+    SRC=$SRCNAM-$VERSION
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+    mkdir $BUILDIR
+
+    
+    tar jxvf ${SRC}_linux-${ARCH}.tar.bz2
+
+
+    cd ${SRCNAM}_linux-${ARCH}
+
+    find -L . \
+	 \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
+	 -o -perm 511 \) -exec chmod 755 {} \; -o \
+	 \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
+	 -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+
+    # Enter path
+    sed -i -e 's:MOZ_PROGRAM="":MOZ_PROGRAM="/opt/zotero/zotero":g' \
+    	zotero
+
+    mkdir -p $BUILDIR/{usr/bin,opt/$PRGNAM}
+    cp -a * $BUILDIR/opt/$PRGNAM
+    ln -s /opt/zotero/zotero $BUILDIR/usr/bin/$PRGNAM
+
+
+    mkdir -p $BUILDIR/install 
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+    cat $CWD/doinst.sh > $BUILDIR/install/doinst.sh
+    
+    
+    find $BUILDIR -print0 | xargs -0 file | grep -e "executable" -e \
+	"shared object" | grep ELF   | cut -f 1 -d : | \
+	xargs strip --strip-unneeded 2> /dev/null || true
+    
+    mkdir -p $BUILDIR/usr/share/{applications,pixmaps}
+    cp $CWD/$PRGNAM.desktop $BUILDIR/usr/share/applications
+    cp $CWD/$PRGNAM.png $BUILDIR/usr/share/pixmaps/$PRGNAM.png
+    
+   
+fi
+echo "Ok"
