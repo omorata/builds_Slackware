@@ -1,0 +1,209 @@
+#!/bin/bash
+
+PRGNAM=kodi
+SRCNAM=xbmc
+NICK=Krypton
+VERSION=${VERSION:-17.6}
+ARCH=${ARCH:-x86_64}
+BUILD=${BUILD:-4omx}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-$TMP}
+
+CPUS="-j 6"
+
+
+FFMPEGVER=${FFMPEGVER:-3.1.11}
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i486 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
+
+
+if [ "$ARCH" = "i486" ]; then
+  SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+  LIBDIRSUFFIX=""
+elif [ "$ARCH" = "i686" ]; then
+  SLKCFLAGS="-O2 -march=i686 -mtune=i686 -lz"
+  LIBDIRSUFFIX=""
+elif [ "$ARCH" = "x86_64" ]; then
+  SLKCFLAGS="-O2 -fPIC"
+  LIBDIRSUFFIX="64"
+else
+  SLKCFLAGS="-O2"
+  LIBDIRSUFFIX=""
+fi
+
+set -e -x
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd $OUTPUT
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    SRC=$SRCNAM-$VERSION-$NICK
+
+    if [ -e $SRC ];then
+        rm -Rf $SRC
+    fi
+
+    #tar zxvf $PRGNAM-$VERSION.tar.gz
+    tar zxvf $SRC.tar.gz
+    
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+
+    mkdir $BUILDIR
+    
+    cd $SRC
+
+    #! tar zxvf $CWD/$SRCNAM-pvr-addons-Helix_rc3.tar.gz
+    #|| tar \      xvf $CWD/13.0-Gotham.tar.gz
+
+    # Don't have the Makefile download ffmpeg during install.
+    #if [ -f "$CWD/FFmpeg-${FFMPEGVER}-${NICK}-${VERSION}.tar.gz" ]; then
+	ln -s $CWD/FFmpeg-${FFMPEGVER}-${NICK}.tar.gz \
+	   tools/depends/target/ffmpeg/ffmpeg-${FFMPEGVER}-${NICK}-17.5.tar.gz
+    #	ln -s $CWD/FFmpeg-${FFMPEGVER}-${NICK}.tar.gz \
+    #	   tools/depends/target/ffmpeg/ffmpeg-${FFMPEGVER}-${NICK}.tar.gz
+    #else
+    #	echo "FFMPEG wasn't found. Please download it and have it available"
+    #	echo "in the source directory ${CWD}."
+    #	exit 1
+    #fi
+    
+    
+    find -L . \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o \
+	 -perm 555 -o -perm 511 \) -exec chmod 755 {} \; -o \
+	 \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o \
+	 -perm 400 \) -exec chmod 644 {} \;
+
+    #! # Fix for sse2 cpu's.
+    #! if grep 'sse2' /proc/cpuinfo 2>&1 > /dev/null; then
+    #!    patch -p1 < $CWD/patches/sse2.patch
+    #! fi
+
+    # No need to show Git: "Version" in a release build.
+    sed -i '/Git:/s|.*|    return GetVersionShort();|' $SRCNAM/utils/SystemInfo.cpp
+
+
+    # Patch for Samba 4.0.
+    patch -p1 < $CWD/patches/xbmc-Krypton-samba-4.0.patch
+
+    # Fix static linking for Texturepacker. Thanks to Gentoo.
+    # Issue: http://forum.kodi.tv/showthread.php?tid=220407
+    patch -p0 < $CWD/patches/kodi-texturepacker.patch
+
+    
+
+    if [ "${FFMPEG:-no}" == "yes" ]; then
+	OPT_DEPS="--with-ffmpeg=shared"
+    else
+	OPT_DEPS=""
+    fi
+
+    # Build webserver. Requires libmicrohttpd.
+    if [ "${WEBSERVER:-no}" == "yes" ]; then
+	OPT_DEPS="$OPT_DEPS --enable-webserver"
+    else
+	OPT_DEPS="$OPT_DEPS --disable-webserver"
+    fi
+
+
+    export PATH="$PATH:$PWD/tools/depends/native/JsonSchemaBuilder/bin"
+
+    
+    ./bootstrap
+    
+    CFLAGS="$SLKCFLAGS" \
+    CXXFLAGS="$SLKCFLAGS" \
+    ./configure \
+      --prefix=/usr \
+      --libdir=/usr/lib${LIBDIRSUFFIX} \
+      --docdir=/usr/doc/$PRGNAM-$VERSION \
+      --disable-silent-rules \
+      --enable-static=no \
+      --disable-debug \
+      --enable-gl \
+      --enable-mid \
+      --enable-alsa \
+      --enable-texturepacker \
+      --enable-pulse \
+      --disable-webserver \
+      $OPT_DEPS \
+      --build=$ARCH-slackware-linux
+    
+    make $CPUS VERBOSE=1
+
+    # Wii controller usage. Default is no.
+    if ! [ "${WII:-no}" = "no" ]; then
+	make eventclients DESTDIR=$BUILDIR WII_EXTRA_OPTS="-DCWIID_OLD"
+	find $BUILDIR/usr/lib${LIBDIRSUFFIX}/python* -iname "*\.py" -exec chmod 0644 '{}' \;
+	# Create byte-compiled python files.
+	python -m compileall $BUILDIR/usr/lib${LIBDIRSUFFIX}/python*/site-packages/$PRGNAM
+
+    fi
+
+    make install DESTDIR=$BUILDIR
+    python -m compileall $BUILDIR/usr/share/$PRGNAM/addons/service.xbmc.versioncheck
+
+    install -m 0755 tools/TexturePacker/TexturePacker $BUILDIR/usr/lib${LIBDIRSUFFIX}/$PRGNAM
+
+
+    find $BUILDIR -type f | xargs file |grep ELF | cut -f 1 -d : |xargs strip \
+	 --strip-unneeded
+
+
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+    mkdir -p $DOC $BUILDIR/install 
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+    cat $CWD/doinst.sh > $BUILDIR/install/doinst.sh 
+
+    
+   # Install manpages.
+    mkdir -p $BUILDIR/usr/man/man1
+    for i in $PRGNAM.bin.1 $PRGNAM.1 $PRGNAM-standalone.1; do
+	install -m 0644 docs/manpages/$i $BUILDIR/usr/man/man1/$i
+    done
+
+
+    if ! [ "${WII:-no}" = "no" ]; then
+	for i in $PRGNAM-ps3remote.1 $PRGNAM-send.1 $PRGNAM-wiiremote.1; do
+	    install -m 0644 docs/manpages/$i $BUILDIR/usr/man/man1/$i
+	done
+    fi
+    gzip -9 $BUILDIR/usr/man/man?/*.?
+
+    cp -a \
+       tools/EventClients/README.txt  $DOC
+
+    
+    # Final clean up.
+    rm -f $BUILDIR/usr/share/xbmc/{README.linux,LICENSE.GPL,*.txt}
+    find $BUILDIR \( -name "Makefile*" -o -name "*cmake*" -o -name "*\.in" \) -exec rm -f '{}' \;
+    chmod 0644 $BUILDIR/usr/share/applications/$PRGNAM.desktop
+    
+    
+fi
+echo "Ok"

@@ -1,0 +1,12 @@
+Compilació de xbmc seguint un Slackbuid.
+
+Dependències:
+* crossguid
+* libass
+* tinyxml
+* yajl
+* openjre o openjdk 
+
+* dcadec
+* libmodplug
+* libmpeg2
