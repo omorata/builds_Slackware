@@ -1,0 +1,11 @@
+units: units (unit conversor)
+units:
+units:  GNU 'units' converts between different systems of units.  It can
+units:  handle multiplicative scale changes.  It can also handle nonlinear
+units:  conversions such as Celsius to Fahrenheit (which may appear to be
+units:  linear but is actually affine).
+units:
+units:  http://ftp.gnu.org/gnu/units/
+units:
+units:
+units:
