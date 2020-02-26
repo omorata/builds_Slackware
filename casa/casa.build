@@ -1,0 +1,81 @@
+#!/bin/bash
+DEST=/tmp/paks
+
+NOMPRG=casa
+VERSIO=${VERSIO:-4.1}
+ARCH=x86_64
+BUILD=1omx
+CWD=$(pwd)
+CASA_VERSION=41.0.24668-001-64b
+
+COMPILE_HASHLIB=y
+HASHLIB_VERSION=20081119
+
+
+set -e -x
+
+CWD=$(pwd)
+
+if [ "$1" == "pkg" ];then 
+
+    cd $DEST
+
+    chown -R root.root .
+
+    makepkg -l y -c n ../$NOMPRG-$VERSIO-$ARCH-$BUILD.tgz
+
+
+    cd ..
+
+    chown oscar.users $NOMPRG-$VERSIO-$ARCH-$BUILD.tgz
+
+    mv $NOMPRG-$VERSIO-$ARCH-$BUILD.tgz $CWD
+    chown -R oscar.users .
+
+else
+
+    SRCDIR=casapy-${CASA_VERSION}
+
+    # First, we create the files that we need from hashlib
+
+    if [ $COMPILE_HASHLIB = y ];then
+	echo;echo "  Will compile hashlib files";echo;echo
+
+	if [ -e hashlib-${HASHLIB_VERSION} ];then
+            rm -Rf hashlib-${HASHLIB_VERSION}
+	fi
+
+        tar zxvf hashlib-${HASHLIB_VERSION}.tar.gz
+
+        cd hashlib-${HASHLIB_VERSION}
+    
+        python setup.py build
+
+        cd ..
+    fi
+    
+
+    ##DOC=$DEST/usr/doc/$NOMPRG-$VERSIO
+
+    tar zxvf ${SRCDIR}.tar.gz
+
+    if [ -e $DEST ];then
+        rm -Rf $DEST
+    fi
+    
+    mkdir -p $DEST/opt/casa $DEST/install
+    #mkdir -p $DOC
+
+
+    cd $SRCDIR/lib/python2.6
+ 
+    cp $CWD/hashlib-${HASHLIB_VERSION}/build/lib.linux-x86_64-2.7/_{md5,sha{,256,512}}.so . 
+
+    
+
+    cd $CWD/$SRCDIR
+    mv * $DEST/opt/casa
+    cp $CWD/slack-desc $DEST/install
+
+fi
+echo "Ok"

@@ -1,0 +1,9 @@
+casa: CASA (Common Astronomy Software Applications)
+casa:
+casa:  CASA is the suite of C++ application libraries for the reduction and
+casa:  analysis of radioastronomical data, packaged through a Python scripting
+casa:  interface. CASA will be the primary off-line data reduction package for
+casa:  both ALMA and the EVLA.
+casa:
+casa:  http://casa.nrao.edu/
+casa:
