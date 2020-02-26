@@ -1,0 +1,103 @@
+#!/bin/bash
+SRCDIR=/tmp
+DEST=$SRCDIR/packages
+
+NOMPROG=tellico
+VERSIO=${VERSIO:-2.3.11}
+ARCH=x86_64
+BUILD=${BUILD:-1omx}
+CWD=$(pwd)
+
+CPUS=3
+
+
+set -e -x
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $DEST
+        chown -R root.root .
+
+        makepkg -l y -c n ../$NOMPROG-$VERSIO-$ARCH-$BUILD.tgz
+        cd ..
+        chown oscar.users $NOMPROG-$VERSIO-$ARCH-$BUILD.tgz
+
+        mv $NOMPROG-$VERSIO-$ARCH-$BUILD.tgz $CWD
+
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    SRC=$NOMPROG-$VERSIO
+    DOC=$DEST/usr/doc/$NOMPROG-$VERSIO
+
+    tar jxvf $NOMPROG-$VERSIO.tar.bz2
+
+    find . \
+        \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+        -exec chmod 755 {} \; -o \
+        \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 \
+	-o -perm 400 \) -exec chmod 644 {} \;
+
+
+
+    if [ -e $DEST ];then
+       rm -Rf $DEST
+    fi
+    mkdir $DEST
+
+    
+    
+    if [ "$ARCH" = "i486" ]; then
+        SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+        LIBDIRSUFFIX=""
+    elif [ "$ARCH" = "i686" ]; then
+        SLKCFLAGS="-O2 -march=i686 -mtune=i686"
+        LIBDIRSUFFIX=""
+    elif [ "$ARCH" = "x86_64" ]; then
+        SLKCFLAGS="-O2 -fPIC"
+        LIBDIRSUFFIX="64"
+    else
+        SLKCFLAGS="-O2"
+        LIBDIRSUFFIX=""
+    fi
+
+    cd $SRC
+
+    mkdir -p build
+    cd build
+
+    cmake .. -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
+             -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
+             -DCMAKE_INSTALL_PREFIX=/usr \
+             -DLIB_SUFFIX=${LIBDIRSUFFIX} \
+             -DMAN_INSTALL_DIR=/usr/man \
+             -DCMAKE_BUILD_TYPE=release \
+	     -DENABLE_WEBCAM=false
+
+
+    #CFLAGS="-O2 -march=i486 -mtune=$ARCH" \
+    #CXXFLAGS="-O2 -march=i486 -mtune=$ARCH" \
+    #./configure  --disable-ooo \
+    #	2>&1 |tee $SRCDIR/configure-${NOMPROG}.log
+
+    make -j $CPUS 
+    make install DESTDIR=$DEST 
+
+    mkdir -p $DEST/usr/doc/$NOMPROG-$VERSIO
+
+    cd $CWD/$SRC
+    cp AUTHORS COMPILING COPYING ChangeLog README tellico.lsm tellico.tips \
+        $DOC
+
+    mkdir $DEST/install
+    cat $CWD/slack-desc > $DEST/install/slack-desc
+
+    cd $DEST
+    find -type f | xargs file |grep -e "executable" -e "shared object"| \
+        grep ELF | cut -f 1 -d : |xargs strip --strip-unneeded
+   
+fi
+echo "Ok"
