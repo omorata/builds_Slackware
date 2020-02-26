@@ -1,0 +1,16 @@
+#+STARTUP:hidestars indent
+#+TITLE: omx builds
+
+Build scripts que he anat fent servir per instal.lar aplicacions diverses en
+*Slackware*
+
+** estructura
+
+Cada directori conté, en general, un fitxer .build amb l'script per fer córrer
+per compilar o instal·lar el programari més altres possibles fitxers
+auxiliars.
+
+En tots els directoris hi hauria d'haver un fitxer /slack-desc/ amb la
+descripció del paquet.
+
+ 
