@@ -1,0 +1,65 @@
+#!/bin/bash
+PRGNAM=ding
+VERSION=${VERSION:-1.8.1}
+ARCH=noarch
+BUILD=${BUILD:-1omx}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+
+set -e -x
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+        find . \
+          \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+          -exec chmod 755 {} \; -o \
+          \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o -perm 400 \) \
+          -exec chmod 644 {} \;
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+
+        chown -R oscar.users .	
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    SRC=$PRGNAM-$VERSION
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+    tar zxvf $PRGNAM-$VERSION.tar.gz
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+
+    mkdir -p $BUILDIR/usr/local/{bin,share/{applications,dict,pixmaps},man/man1}
+    mkdir -p $BUILDIR/install $DOC
+
+    cd $SRC
+    sed -e "s#/usr/share/dict/#/usr/local/share/dict/#" ding > ding.new
+
+    cp ding.new $BUILDIR/usr/local/bin/ding
+    chmod 755 $BUILDIR/usr/local/bin/ding
+
+    cp de-en.txt $BUILDIR/usr/local/share/dict
+    cp ding.png $BUILDIR/usr/local/share/pixmaps
+    cp ding.desktop $BUILDIR/usr/local/share/applications
+
+    cp ding.1 $BUILDIR/usr/local/man/man1
+    gzip $BUILDIR/usr/local/man/man1/*
+
+    cp $CWD/slack-desc $BUILDIR/install
+
+    cp CHANGES COPYING README $DOC
+fi
+echo "Ok"
