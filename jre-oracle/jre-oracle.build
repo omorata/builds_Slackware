@@ -1,0 +1,90 @@
+#!/bin/bash
+
+PRGNAM=jre
+#SRCNAM=jre
+VERSION=${VERSION:-9.0.1}
+BUILD=${BUILD:-1omx}
+ARCH=${ARCH:-x86_64}
+
+ARCHNAME="linux-x64"
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-$TMP}
+
+#CPUS="-j 3"
+
+if [ -z "$ARCH" ]; then
+    case "$( uname -m )" in
+	i?86) ARCH=i486 ;;
+	arm*) ARCH=arm ;;
+	*) ARCH=$( uname -m ) ;;
+    esac
+fi
+
+
+
+set -e -x
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd $OUTPUT
+	
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+	
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+
+
+    
+    SRC=$PRGNAM-$VERSION
+    #DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+    mkdir $BUILDIR
+
+    
+    tar zxvf ${SRC}_${ARCHNAME}_bin.tar.gz
+
+
+    cd $SRC
+
+    find -L . \
+	 \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
+	 -o -perm 511 \) -exec chmod 755 {} \; -o \
+	 \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
+	 -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+
+
+    mkdir -p ${BUILDIR}/opt/${SRC}
+    cp -a *  $BUILDIR/opt/${SRC}
+
+
+    mkdir -p $BUILDIR/install 
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+    #cat $CWD/doinst.sh > $BUILDIR/install/doinst.sh
+    
+    
+    find $BUILDIR -print0 | xargs -0 file | grep -e "executable" -e \
+	"shared object" | grep ELF   | cut -f 1 -d : | \
+	xargs strip --strip-unneeded 2> /dev/null || true
+    
+    
+   
+fi
+echo "Ok"

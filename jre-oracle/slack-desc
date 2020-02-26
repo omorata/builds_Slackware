@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.
+# Line up the first '|' above the ':' following the base package name, and
+# the '|' on the right side marks the last column you can put a character in.
+# You must make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':' except on otherwise blank lines.
+
+   |-----handy-ruler------------------------------------------------------|
+jre: jre (Java Runtime Environment from Oracle)
+jre:
+jre: Java Platform, Standard Edition (Java SE) lets you develop and deploy
+jre: Java applications on desktops and servers. Java offers the rich user
+jre: interface, performance, versatility, portability, and security that
+jre: today's applications require. JRE (Java Runtime Environment) covers
+jre: most end-users needs. Contains everything required to run Java
+jre: applications on your system.
+jre:
+jre: Home: http://www.oracle.com/technetwork/java/javase
+jre:
