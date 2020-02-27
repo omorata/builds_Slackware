@@ -1,0 +1,130 @@
+#!/bin/bash
+PRGNAM=gnumeric
+VERSION=${VERSION:-1.12.46}
+ARCH=${ARCH:-x86_64}
+BUILD=${BUILD:-1omx}
+CPUS=${CPUS:-3}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+
+
+
+set -e -x
+
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i486 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
+
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.txz
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.txz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.txz $CWD
+
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+
+    SRC=$PRGNAM-$VERSION
+    DOC=$BUILDIR/usr/doc/$SRC
+
+    
+    if [ -e $BUILDIR ];then
+       rm -Rf $BUILDIR
+    fi
+    mkdir $BUILDIR
+
+    
+    if [ -e $SRC ];then
+       rm -Rf $SRC
+    fi
+
+    tar Jxvf $SRC.tar.xz
+
+    find . \
+        \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+        -exec chmod 755 {} \; -o \
+        \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 \
+	-o -perm 400 \) -exec chmod 644 {} \;
+
+
+    
+    cd $SRC
+
+
+    if [ "$ARCH" = "i486" ]; then
+	SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+	LIBDIRSUFFIX=""
+    elif [ "$ARCH" = "i686" ]; then
+	SLKCFLAGS="-O2 -march=i686 -mtune=i686"
+	LIBDIRSUFFIX=""
+    elif [ "$ARCH" = "x86_64" ]; then
+	SLKCFLAGS="-O2 -fPIC"
+	LIBDIRSUFFIX="64"
+    else
+	SLKCFLAGS="-O2"
+	LIBDIRSUFFIX=""
+    fi
+    # Thanks to mancha for this gem :-)
+    # The docs will still be missing, but at least we can build the app itself
+    touch doc/C/gnumeric-C.omf.out
+
+    #LIBS="-I/usr/include/gtk-2.0 \
+    #  -I/usr/include/atk-1.0 \
+    #  -I/usr/lib/gtk-2.0/include"
+
+    
+    CFLAGS="$SLKCFLAGS" \
+    CXXFLAGS="$SLKCFLAGS" \
+    ./configure \
+      --prefix=/usr \
+      --libdir=/usr/lib${LIBDIRSUFFIX} \
+      --sysconfdir=/etc \
+      --localstatedir=/var \
+      --mandir=/usr/man \
+      --docdir=/usr/doc/$PRGNAM-$VERSION \
+      --without-psiconv \
+      --build=$ARCH-slackware-linux
+
+    make -j $CPUS
+    make install DESTDIR=$BUILDIR
+
+    find $BUILDIR | xargs file | grep -e "executable" -e "shared object" \
+	| grep ELF | cut -f 1 -d : \
+	| xargs strip --strip-unneeded 2> /dev/null || true
+
+    find $BUILDIR/usr/man -type f -exec gzip -9 {} \;
+    for i in $( find $BUILDIR/usr/man -type l ) ; do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+
+    mkdir -p $DOC
+    
+    cp -a \
+       AUTHORS BEVERAGES BUGS COPYING HACKING INSTALL MAINTAINERS NEWS README \
+       $DOC
+
+
+    mkdir -p $BUILDIR/install
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+    cat $CWD/doinst.sh > $BUILDIR/install/doinst.sh
+
+fi
+
+echo "Ok"
+
+    

@@ -1,0 +1,114 @@
+#!/bin/bash
+
+PRGNAM=goffice
+VERSION=${VERSION:-0.10.46}
+ARCH=${ARCH:-x86_64}
+BUILD=${BUILD:-1omx}
+CPUS=${CPUS:-4}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+
+set -e -x
+
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i486 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
+
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.txz
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.txz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.txz $CWD
+
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+
+    SRC=$PRGNAM-$VERSION
+    DOC=$BUILDIR/usr/doc/$SRC
+
+    
+    if [ -e $BUILDIR ];then
+       rm -Rf $BUILDIR
+    fi
+    mkdir $BUILDIR
+
+    
+    if [ -e $SRC ];then
+       rm -Rf $SRC
+    fi
+
+
+    tar Jxvf $SRC.tar.xz
+
+    find . \
+        \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+        -exec chmod 755 {} \; -o \
+        \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 \
+	-o -perm 400 \) -exec chmod 644 {} \;
+
+
+
+
+
+    if [ "$ARCH" = "i486" ]; then
+	SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+	LIBDIRSUFFIX=""
+    elif [ "$ARCH" = "i686" ]; then
+	SLKCFLAGS="-O2 -march=i686 -mtune=i686"
+	LIBDIRSUFFIX=""
+    elif [ "$ARCH" = "x86_64" ]; then
+	SLKCFLAGS="-O2 -fPIC"
+	LIBDIRSUFFIX="64"
+    else
+	SLKCFLAGS="-O2"
+	LIBDIRSUFFIX=""
+    fi
+
+    cd $SRC
+    
+    CFLAGS="$SLKCFLAGS" \
+    CXXFLAGS="$SLKCFLAGS" \
+    ./configure \
+      --prefix=/usr \
+      --libdir=/usr/lib${LIBDIRSUFFIX} \
+      --sysconfdir=/etc \
+      --localstatedir=/var \
+      --docdir=/usr/doc/$PRGNAM-$VERSION \
+      --build=$ARCH-slackware-linux
+
+    make -j $CPUS
+    make install-strip DESTDIR=$BUILDIR
+
+    mkdir -p $DOC
+    cp -a AUTHORS BUGS COPYING ChangeLog INSTALL MAINTAINERS NEWS README \
+       $DOC
+    
+    find $BUILDIR/usr/doc -type f -exec chmod 644 {} \;
+    (cd $BUILDIR/usr/doc/$PRGNAM-$VERSION; \
+     ln -s /usr/share/gtk-doc/html/goffice html)
+
+    mkdir -p $BUILDIR/install
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+
+fi
+
+
+
+echo "Ok"
