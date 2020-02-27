@@ -1,0 +1,111 @@
+#!/bin/bash
+
+PRGNAM=gildas
+VERSION=${VERSION:-jun19c}
+ARCH=${ARCH:-x86_64}
+BUILD=${BUILD:-2omx}
+EXT=${EXT:-txz}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+
+MAKEDOC=${MAKEDOC:-y}
+
+#no acaba de funcionar
+#CPUS="-j 1"
+
+set -e -x
+
+
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i486 ;;
+    arm*) ARCH=arm ;;
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
+
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.$EXT
+
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.$EXT
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.$EXT $CWD
+
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+
+    SRC=$PRGNAM-src-$VERSION
+    EXE=$PRGNAM-exe-$VERSION
+    
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+
+    tar Jxvf $SRC.tar.xz
+
+
+    # trick to compile it in x86_64 (maybe)
+    # 
+    # cpp -C gives the wrong output
+    #
+    #sed -i 's/traditional -C/traditional/g' $SRC/admin/Makefile.def
+
+
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+
+    mkdir -p $BUILDIR/usr/local/Gildas $DOC $BUILDIR/install
+
+
+    cd $SRC
+
+    export GAG_SEARCH_PATH="/usr/lib"
+    source admin/gildas-env.sh
+
+    make 
+    make install
+
+
+    cp [A-W]* $DOC
+
+
+    cd $CWD/$EXE
+    cd etc
+
+    sed -i 's/\/home\/oscar\/soft\/codi_font\/ciencia\/gildas\/gildas-exe-$VERSION/\/usr\/local\/Gildas/g' bash_profile gag.dico.gbl login
+
+
+    cd ..
+
+    if [[ $MAKEDOC == "y" ]];then
+	echo;echo "Building documentation...";echo
+	sleep 2
+
+	tar Jxvf $CWD/$PRGNAM-doc-$VERSION.tar.xz
+    fi
+    
+    
+    mv * $BUILDIR/usr/local/Gildas
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+
+
+    cd $BUILDIR
+    
+    find -type f | xargs file |grep ELF | cut -f 1 -d : |xargs strip
+
+fi
+echo "Ok"

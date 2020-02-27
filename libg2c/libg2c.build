@@ -1,0 +1,54 @@
+#!/bin/bash
+
+PRGNAM=libg2c
+VERSION=${VERSION:-3.4.6}
+ARCH=x64
+BUILD=${BUILD:-1omx}
+
+RPMNAME=compat-libf2c-34-3.4.6-32.el7.x86_64.rpm
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-$TMP}
+
+
+set -e -x
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+
+	chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+    mkdir $BUILDIR
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+    mkdir -p $BUILDIR/install $DOC
+
+    cd $BUILDIR
+    rpm2cpio < $CWD/$RPMNAME | cpio -imdv || exit 1
+
+
+    cp usr/share/doc/compat*/* $DOC
+    rm -Rf usr/share
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+
+
+fi
+echo "Ok"

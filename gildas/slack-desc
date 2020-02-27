@@ -1,0 +1,11 @@
+gildas: Gildas
+gildas:
+gildas:  GILDAS is a collection of state-of-the-art software oriented toward
+gildas:  (sub-)millimeter radioastronomical applications (either single-dish
+gildas:  or interferometer). It is daily used to reduce all data acquired
+gildas:  with the IRAM 30M telescope and Plateau de Bure Interferometer PDBI
+gildas:  (except VLBI observations). GILDAS is easily extensible. GILDAS is
+gildas:  written in Fortran-90, with a few parts in C/C++ (mainly keyboard
+gildas:  interaction, plotting, widgets).
+gildas:  GILDAS home page:  http://www.iram.fr/IRAMFR/GILDAS
+gildas:
