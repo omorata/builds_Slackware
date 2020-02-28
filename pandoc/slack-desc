@@ -1,0 +1,12 @@
+pandoc: pandoc (a universal document converter)
+pandoc:
+pandoc:  Pandoc is a free and open-source document converter, widely
+pandoc:  used as a writing tool (especially by scholars) and as a basis
+pandoc:  for publishing workflows. It was created by John MacFarlane, a
+pandoc:  philosophy professor at the University of California,
+pandoc:  Berkeley.
+pandoc:
+pandoc:  https://pandoc.org/index.html
+pandoc:
+pandoc:
+

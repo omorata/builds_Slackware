@@ -1,0 +1,52 @@
+#!/bin/bash
+
+PRGNAM=pandoc
+VERSION=${VERSION:-2.9.2}
+ARCH=x86_64
+BUILD=${BUILD:-2omx}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+
+
+set -e -x
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.txz
+
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.txz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.txz $CWD
+
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    SRC=${PRGNAM}-$VERSION
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+
+    tar zxvf  $SRC-linux-amd64.tar.gz
+
+    cd $SRC
+
+    mkdir -p $BUILDIR/usr $BUILDIR/install
+
+    cp -R bin $BUILDIR/usr
+    cp -R share $BUILDIR/usr
+    
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+
+fi
+echo "Ok"
+
