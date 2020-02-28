@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.
+# Line up the first '|' above the ':' following the base package name, and
+# the '|' on the right side marks the last column you can put a character in.
+# You must make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':' except on otherwise blank lines.
+
+          |-----handy-ruler------------------------------------------------------|
+pdftk-java: pdftk-java (The PDF Toolkit)
+pdftk-java:
+pdftk-java: Pdftk-Java  is a port of pfdtk into Java. The current goal is to make
+pdftk-java: a translation as faithful as it is reasonable and to fix any issues
+pdftk-java: present in the original (correctness takes precedence over
+pdftk-java: compatibility, see the differences), leaving possible improvements
+pdftk-java: and refactoring for later. So far all code has been manually
+pdftk-java: translated and it passes the test suite of php-pdftk, but a lot more
+pdftk-java: testing is needed.
+pdftk-java:
+pdftk-java: https://gitlab.com/pdftk-java/pdftk

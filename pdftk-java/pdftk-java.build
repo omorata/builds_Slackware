@@ -1,0 +1,56 @@
+#!/bin/bash
+
+PRGNAM=pdftk-java
+VERSION=${VERSION:-3.0.9}
+ARCH=noarch
+BUILD=${BUILD:-1omx}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+
+
+set -e -x
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+
+        chown -R oscar.users .	
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    JARFILE=$CWD/pdftk-all.jar
+    BASHFILE=$CWD/pdftk
+
+    BINDIR=/usr/local/bin
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+       
+    if [[ -n $BINDIR ]];then
+	sed -i "s|BINDIR=.*|BINDIR=${BINDIR}|" $BASHFILE
+    fi
+
+
+    mkdir -p $BUILDIR$BINDIR $BUILDIR/install
+
+    cp $JARFILE $BASHFILE $BUILDIR$BINDIR
+
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+
+    cd $BUILDIR$BINDIR
+    chmod +x pdftk
+fi
+echo "Ok"
+
