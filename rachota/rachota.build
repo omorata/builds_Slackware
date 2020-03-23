@@ -41,7 +41,7 @@ else
     cp $CWD/$SRC.jar $BUILDIR/usr/local/bin
     cp $CWD/rachota $BUILDIR/usr/local/bin
     
-    cp $CWD/slack-desc $BUILDIR/install
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
 
     cd $BUILDIR
     chmod +x usr/local/bin/rachota
