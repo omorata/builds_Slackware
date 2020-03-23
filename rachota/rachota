@@ -1,0 +1,7 @@
+#!/bin/bash
+
+RACHOTA_DIR=${RACHOTA_DIR:-/usr/local/bin}
+RACHOTA_USERDIR=${RACHOTA_USERDIR:-.}
+
+java -jar ${RACHOTA_DIR}/rachota_24.jar -userdir=${RACHOTA_USERDIR}
+
