@@ -1,0 +1,53 @@
+#!/bin/bash
+
+PRGNAM=git-latexdiff
+VERSION=${VERSION:-1.4.x}
+ARCH=noarch
+BUILD=${BUILD:-1omx}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+
+
+set -e -x
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.txz
+        cd ..
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.txz
+
+	mv $PRGNAM-$VERSION-$ARCH-$BUILD.txz $CWD
+	
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+    SRC=${PRGNAM}-master
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+
+
+    mkdir -p $BUILDIR/usr/libexec/git-core $BUILDIR/install
+
+    tar jxvf ${SRC}.tar.bz2
+    
+    cd ${SRC}
+    patch -p0 < $CWD/patch.Makefile
+
+    make DESTDIR=${BUILDIR} install
+    
+    cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+
+
+fi
+echo "Ok"
+
