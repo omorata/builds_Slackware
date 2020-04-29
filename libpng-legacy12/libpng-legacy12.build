@@ -1,0 +1,112 @@
+#!/bin/bash
+
+PRGNAM=libpng-legacy12
+VERSION=${VERSION:-1.2.57}
+BUILD=${BUILD:-1omx}
+ARCH=${ARCH:-x86_64}
+
+
+UPSTREAM_VER=${UPSTREAM_VER:-1.2.57}
+UPSTREAM_BUILD=${UPSTREAM_BUILD:-1}
+UPSTREAM_TAG=${UPSTREAM_TAG:-_slack13.0}
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/packages}
+BUILDIR=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-$TMP}
+
+CPUS="-j 3"
+
+if [ -z "$ARCH" ]; then
+    case "$( uname -m )" in
+	i?86) ARCH=i486 ;;
+	arm*) ARCH=arm ;;
+	*) ARCH=$( uname -m ) ;;
+    esac
+fi
+
+case "$ARCH" in
+   i?86) LIBDIRSUFFIX=""; ARCH=i486 ;;
+ x86_64) LIBDIRSUFFIX="64" ;;
+      *) echo "Warning: unrecognized ARCH '$ARCH'" ;;
+esac
+
+UPSTREAM=libpng-$UPSTREAM_VER-$ARCH-$UPSTREAM_BUILD$UPSTREAM_TAG
+
+set -e -x
+
+
+if [ "$1" == "pkg" ];then 
+    if [ `id -u` -eq 0 ];then 
+        cd $BUILDIR
+        chown -R root.root .
+
+        makepkg -l y -c n ../$PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        cd $OUTPUT
+	
+        chown oscar.users $PRGNAM-$VERSION-$ARCH-$BUILD.tgz
+
+        mv $PRGNAM-$VERSION-$ARCH-$BUILD.tgz $CWD
+	
+        chown -R oscar.users .
+    else
+        echo "Has de ser root per poder instal·lar el paquet"
+    fi
+else
+
+
+    
+    #SRC=$SRCNAM-$VERSION
+    DOC=$BUILDIR/usr/doc/$PRGNAM-$VERSION
+
+
+
+    #tar zxvf $SRC.tar.gz
+
+    if [ -e $BUILDIR ];then
+        rm -Rf $BUILDIR
+    fi
+    mkdir $BUILDIR
+
+    rm -Rf $CWD/$PRGNAM
+    mkdir $CWD/$PRGNAM
+    
+    #cd $CWD/$PRGNAM
+    cd $BUILDIR
+    tar xvf $CWD/$UPSTREAM.txz
+
+
+    # Include only the shared lib, plus SBo-specific docs.
+    #mkdir -p $BUILDIR/usr/lib$LIBDIRSUFFIX
+    #cp -a \
+    #   ./usr/lib$LIBDIRSUFFIX/libpng12.so.*.*.* \
+    #   $BUILDIR/usr/lib$LIBDIRSUFFIX
+       #./usr/lib$LIBDIRSUFFIX/libpng12.la \
+
+    
+    #cd $BUILDIR
+
+    #find -L . \
+#	 \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
+#	 -o -perm 511 \) -exec chmod 755 {} \; -o \
+#	 \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
+#	 -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+
+    
+
+
+    #mkdir -p $DOC $BUILDIR/install 
+
+    #cat $CWD/README > $DOC/README
+    #cat $CWD/slack-desc > $BUILDIR/install/slack-desc
+    
+
+    # make our doinst.sh from upstream's
+    #grep libpng12.so ./install/doinst.sh > $BUILDIR/install/doinst.sh
+   
+
+
+   
+fi
+echo "Ok"
