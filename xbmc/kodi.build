@@ -5,14 +5,14 @@ SRCNAM=xbmc
 NICK=Krypton
 VERSION=${VERSION:-17.6}
 ARCH=${ARCH:-x86_64}
-BUILD=${BUILD:-5omx}
+BUILD=${BUILD:-6omx}
 
 CWD=$(pwd)
 TMP=${TMP:-/tmp/packages}
 BUILDIR=$TMP/package-$PRGNAM
 OUTPUT=${OUTPUT:-$TMP}
 
-CPUS="-j 6"
+CPUS="-j 5"
 
 
 FFMPEGVER=${FFMPEGVER:-3.1.11}
