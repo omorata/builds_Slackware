@@ -3,7 +3,7 @@
 DEST=/tmp/packages
 
 PRGNAM=skypeforlinux
-VERSION=${VERSION:-8.60.0.76}
+VERSION=${VERSION:-8.61.0.77}
 ARCH=${ARCH:-x86_64}
 BUILD=${BUILD:-1omx}
 
